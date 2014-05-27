@@ -1,13 +1,11 @@
 /////////////////////////////////////////////////////////////////
 //                                                             //
-//         Trabalho II: Sistema de Gestão de Ficheiros         //
+//                     Virtual File System                     //
 //                                                             //
-// compilação: gcc vfs.c -Wall -lreadline -lcurses -o vfs      //
+// compilação: gcc -Wall -lreadline -lcurses vfs.c             //
 // utilização: vfs [-b[256|512|1024]] [-f[8|10|12]] FILESYSTEM //
 //                                                             //
 /////////////////////////////////////////////////////////////////
-
-// Virtual file system
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,16 +18,17 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
-#define MAXARGS 100
-#define CHECK_NUMBER 9999
-#define TYPE_DIR 'D'
-#define TYPE_FILE 'F'
+#define MAXARGS 		100
+#define CHECK_NUMBER 	9999
+#define TYPE_DIR 		'D'
+#define TYPE_FILE 		'F'
 #define MAX_NAME_LENGHT 20
 
 #define FAT_ENTRIES(TYPE) (TYPE == 8 ? 256 : TYPE == 10 ? 1024 : 4096)
 #define FAT_SIZE(TYPE) (FAT_ENTRIES(TYPE) * sizeof(int))
 #define BLOCK(N) (blocks + N * sb->block_size)
 #define DIR_ENTRIES_PER_BLOCK (sb->block_size / sizeof(dir_entry))
+#define MAX_ENTRIES (sb->block_size / sizeof(dir_entry))
 
 typedef struct command {
   char *cmd;              // string apenas com o comando
@@ -58,9 +57,9 @@ typedef struct directory_entry {
 
 // variáveis globais
 superblock *sb;   // superblock do sistema de ficheiros
-int *fat;         // apontador para a FAT
-char *blocks;     // apontador para a região dos dados
-int current_dir;  // bloco do directório corrente
+int*  fat;         // apontador para a FAT
+char* blocks;     // apontador para a região dos dados
+int  current_dir;  // bloco do directório corrente
 
 // funções auxiliares
 COMMAND parse(char*);
@@ -87,6 +86,7 @@ void vfs_cp(char*, char*);
 void vfs_mv(char*, char*);
 void vfs_rm(char*);
 
+char* months[12] = { "Jan", "Fev", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Set", "Oct", "Nov", "Dec" };
 
 int main(int argc, char *argv[]) {
   char *linha;
@@ -274,6 +274,18 @@ void init_dir_entry(dir_entry *dir, char type, char *name, int size, int first_b
   return;
 }
 
+/*void print_fat()
+{
+	int i;
+
+	for(i = 0; i < 100; i++)
+	{
+		printf("%d %d\t", i, fat[i]);
+	}
+
+	printf("\n");
+}*/
+
 
 void exec_com(COMMAND com)
 {
@@ -354,11 +366,44 @@ void exec_com(COMMAND com)
 // ls - lista o conteúdo do directório actual
 void vfs_ls(void)
 {
-	print_fat();
+	//print_fat();
+	
+	int	num_entries;
 
-	dir_entry* 	dir = (dir_entry *) BLOCK(current_dir);
-	int			current_block = dir[0].first_block;
-	int			n_entries = dir[0].size;		
+	dir_entry* dir  = (dir_entry*) BLOCK(current_dir);
+	num_entries		= dir[0].size;
+	dir_entry* dirs = (dir_entry*) malloc(sizeof(dir_entry)* num_entries);
+
+	//int	current_block 		= dir[0].first_block;
+	/*int num_blocks    		= num_entries / MAX_ENTRIES;
+	int overflowing_blocks	= ;*/
+	int	i;
+	/*int	j;
+	
+	for(i = 0; i < num_blocks; i++)
+	{
+		for(j = 0; j < MAX_ENTRIES; j++)
+		{
+			dir[j * MAX_ENTRIES + 1] = dir[i];
+		}
+		
+		current_block = fat[current_block];
+		dir = (dir_entry*) BLOCK(current_block);
+	}*/
+	
+	for(i = 0; i < num_entries; i++)
+	{
+		printf("%-20s\t%2d-%s-%d\t", dirs[i].name, dirs[i].day, months[dirs[i].month - 1], 1900 + dirs[i].year);
+		
+		if(dirs[i].type == TYPE_DIR)
+		{
+			printf("DIR\n");
+		}
+		else
+		{
+			printf("%d\n", dirs[i].size);
+		}
+	}
 
 	return;
 }
@@ -371,7 +416,8 @@ void vfs_mkdir(char *nome_dir) {
 
 
 // cd dir - move o directório actual para dir.
-void vfs_cd(char *nome_dir) {
+void vfs_cd(char *nome_dir) 
+{
   return;
 }
 
@@ -423,16 +469,4 @@ void vfs_mv(char *nome_orig, char *nome_dest) {
 // rm fich - remove o ficheiro fich
 void vfs_rm(char *nome_fich) {
   return;
-}
-
-void print_fat()
-{
-	int i;
-
-	for(i = 0; i < 100; i++)
-	{
-		printf("%d %d\t", i, fat[i]);
-	}
-
-	printf("\n");
 }
