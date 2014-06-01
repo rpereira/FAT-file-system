@@ -393,6 +393,36 @@ int allocateBlock()
 	return temp;
 }
 
+char* getDirName(int block, int parent)
+{
+	dir_entry* dir = (dir_entry*)BLOCK(parent);
+
+	int i = 0;
+	int j = 0;
+
+	while(i < dir[0].size)
+	{
+		int block_index = i / (sb->block_size / sizeof(dir_entry));
+		int entry_index = i % (sb->block_size / sizeof(dir_entry));
+
+		if(block_index > j)
+		{
+			parent = fat[parent];
+			dir = (dir_entry *)BLOCK(parent);
+			j++;
+		}
+
+		if(dir[entry_index].first_block == block)
+		{
+			return dir[entry_index].name;
+		}
+
+		i++;
+	}
+
+	return NULL;
+}
+
 /**
  * List current dir content
  */
@@ -504,10 +534,26 @@ void vfs_cd(char* dir_name)
 	return;
 }
 
-
-// pwd - escreve o caminho absoluto do directório actual
+/**
+* Prints the path of the current working directory.
+* @param dir_name the name of the new directory
+*/
 void vfs_pwd(void)
 {
+	dir_entry* dir = (dir_entry*)BLOCK(current_dir);
+
+	printf("/");
+
+	while(current_dir != 0)
+	{
+		printf("%s/", getDirName(current_dir, dir[1].first_block));
+
+		current_dir = dir[1].first_block;
+		dir = (dir_entry*)BLOCK(current_dir);
+	}
+
+	printf("\n");
+
 	return;
 }
 
