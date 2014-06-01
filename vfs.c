@@ -362,47 +362,53 @@ void exec_com(COMMAND com)
   return;
 }
 
+int allocateBlock()
+{
+    if(sb->free_block == -1)
+        return -1;
+    
+    int temp = sb->free_block;
+    
+    sb->free_block = fat[temp];
+    
+    fat[temp] = -1;
+    
+    return temp;
+}
+
 
 // ls - lista o conteúdo do directório actual
 void vfs_ls(void)
-{
-	//print_fat();
+{	
+	int i = 0;
+	int j = 0;
 	
-	int	num_entries;
-
-	dir_entry* dir  = (dir_entry*) BLOCK(current_dir);
-	num_entries		= dir[0].size;
-	dir_entry* dirs = (dir_entry*) malloc(sizeof(dir_entry)* num_entries);
-
-	//int	current_block 		= dir[0].first_block;
-	/*int num_blocks    		= num_entries / MAX_ENTRIES;
-	int overflowing_blocks	= ;*/
-	int	i;
-	/*int	j;
+	dir_entry* dir = (dir_entry*) BLOCK(current_dir);
 	
-	for(i = 0; i < num_blocks; i++)
+	while(i < dir[0].size)
 	{
-		for(j = 0; j < MAX_ENTRIES; j++)
+		int block_index = i / (sb->block_size/sizeof(dir_entry));
+		int entry_index = i % (sb->block_size/sizeof(dir_entry));
+		
+		if(block_index > j)
 		{
-			dir[j * MAX_ENTRIES + 1] = dir[i];
+			current_dir = fat[current_dir];
+			dir 		= (dir_entry*) BLOCK(current_dir);
+			j++;
 		}
 		
-		current_block = fat[current_block];
-		dir = (dir_entry*) BLOCK(current_block);
-	}*/
-	
-	for(i = 0; i < num_entries; i++)
-	{
-		printf("%-20s\t%2d-%s-%d\t", dirs[i].name, dirs[i].day, months[dirs[i].month - 1], 1900 + dirs[i].year);
+		printf("%s\t %d-%s-%d\t", dir[i].name, dir[i].day, months[dir[i].month - 1], 1900 + dir[i].year);
 		
-		if(dirs[i].type == TYPE_DIR)
+		if(dir[i].type == TYPE_DIR)
 		{
 			printf("DIR\n");
 		}
 		else
 		{
-			printf("%d\n", dirs[i].size);
+			printf("%d\n", dir[i].size);
 		}
+		
+		i++;
 	}
 
 	return;
@@ -410,15 +416,70 @@ void vfs_ls(void)
 
 
 // mkdir dir - cria um subdirectório com nome dir no directório actual
-void vfs_mkdir(char *nome_dir) {
-  return;
+void vfs_mkdir(char* nome_dir)
+{
+	// check name length
+	if(strlen(nome_dir) > MAX_NAME_LENGHT)
+	{
+		printf("mkdir: cannot create directory '%s': File name too long\n", nome_dir);
+		return;
+	}
+	
+	dir_entry* dir = (dir_entry*) BLOCK(current_dir);
+	
+	int block_index = dir->size / (sb->block_size/sizeof(dir_entry));
+	int entry_index = dir->size % (sb->block_size/sizeof(dir_entry));
+	int new_block;
+	
+	while(block_index > 0)
+	{
+		// current dir block
+		if(fat[current_dir] == -1)
+		{
+			fat[current_dir] = allocateBlock();
+		}
+		
+		current_dir = fat[current_dir];
+		block_index--;
+	}
+	
+	//new_block = allocateBlock();
+	
+	// ...
+	
+	return;
 }
 
 
 // cd dir - move o directório actual para dir.
-void vfs_cd(char *nome_dir) 
+void vfs_cd(char* nome_dir) 
 {
-  return;
+	int i = 0;
+	int j = 0;
+	
+	dir_entry* dir = (dir_entry*) BLOCK(current_dir);
+	
+	while(i < dir[0].size)
+	{
+		int block_index = i / (sb->block_size/sizeof(dir_entry));
+		int entry_index = i % (sb->block_size/sizeof(dir_entry));
+		
+		if(block_index > j)
+		{
+			current_dir = fat[current_dir];
+			dir 		= (dir_entry*) BLOCK(current_dir);
+			j++;
+		}
+		
+		if(strcmp(dir[entry_index].name, nome_dir) == 0)
+		{
+			current_dir = dir[entry_index].first_block;
+		}
+		
+		i++;
+	}
+	
+	return;
 }
 
 
