@@ -561,6 +561,62 @@ void vfs_pwd(void)
 // rmdir dir - remove o subdirectório dir (se vazio) do directório actual
 void vfs_rmdir(char *dir_name)
 {
+	dir_entry* dir = (dir_entry*)BLOCK(current_dir);
+
+	int i = 0;
+	int j = 0;
+
+	while(i < dir[0].size)
+	{
+		int block_index = i / (sb->block_size / sizeof(dir_entry));
+		int entry_index = i % (sb->block_size / sizeof(dir_entry));
+
+		if(block_index > j)
+		{
+			current_dir = fat[current_dir];
+			dir = (dir_entry*)BLOCK(current_dir);
+			j++;
+		}
+
+		if(strcmp(dir_name, dir[entry_index].name) == 0)
+		{
+			dir_entry* rem_dir = (dir_entry*)BLOCK(dir[entry_index].first_block);
+
+			if(rem_dir[0].size == 2)
+			{
+				// free block used by dir
+				fat[rem_dir->first_block] = sb->free_block;
+				sb->free_block = rem_dir->first_block;
+
+				// find last dir entry
+				int last_block_index = (dir[0].size - 1) / (sb->block_size / sizeof(dir_entry));
+				int last_entry_index = (dir[0].size - 1) % (sb->block_size / sizeof(dir_entry));
+
+				dir = (dir_entry*)BLOCK(current_dir);
+				dir[0].size--;
+
+				// not the last entry
+				if(i != dir[0].size - 1)
+				{
+
+				}
+
+				if(last_entry_index == 0)
+				{
+
+				}
+			}
+			else
+			{
+				printf("Dir %s is not empty!\n", dir_name);
+			}
+
+			return;
+		}
+
+		i++;
+	}
+
 	return;
 }
 
