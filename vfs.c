@@ -408,7 +408,7 @@ char* getDirName(int block, int parent)
 		if(block_index > j)
 		{
 			parent = fat[parent];
-			dir = (dir_entry *)BLOCK(parent);
+			dir    = (dir_entry*)BLOCK(parent);
 			j++;
 		}
 
@@ -436,7 +436,6 @@ void vfs_ls(void)
 	while(i < dir[0].size)
 	{
 		int block_index = i / (sb->block_size / sizeof(dir_entry));
-		int entry_index = i % (sb->block_size / sizeof(dir_entry));
 
 		if(block_index > j)
 		{
@@ -477,28 +476,39 @@ void vfs_mkdir(char* dir_name)
 
 	dir_entry* dir = (dir_entry*)BLOCK(current_dir);
 
-	int block_index = dir->size / (sb->block_size / sizeof(dir_entry));
-	int entry_index = dir->size % (sb->block_size / sizeof(dir_entry));
+	int i 				= 0;
+	int	size 			= dir[0].size;
 	int new_block;
+	int	already_exists 	= 0;
 
-	while(block_index > 0)
+	if(allocateBlock() == -1)
 	{
-		// current dir block
-		if(fat[current_dir] == -1)
-		{
-			fat[current_dir] = allocateBlock();
-		}
-
-		current_dir = fat[current_dir];
-		block_index--;
+		printf("mkdir: disk is full\n");
+		return;
 	}
 
-	//new_block = allocateBlock();
+	// check if dir name already exists
+	for(i = 0; i < size; i++)
+	{
+		if(!strcmp(dir[i].name, dir_name))
+		{
+			already_exists = 1;
+			printf("mkdir: cannot create directory '%s': File exists\n", dir_name);
+			return;
+		}
+	}
 
-	// ...
+	if(!already_exists)
+	{
+		new_block = allocateBlock();
+
+		init_dir_entry(&dir[size], TYPE_DIR, dir_name, 0, new_block);
+		init_dir_block(new_block, dir[0].first_block);
+		dir[0].size++;
+	}
 
 	return;
-}
+} 
 
 /**
 * Changes the current working directory.
@@ -589,7 +599,7 @@ void vfs_rmdir(char *dir_name)
 				sb->free_block = rem_dir->first_block;
 
 				// find last dir entry
-				int last_block_index = (dir[0].size - 1) / (sb->block_size / sizeof(dir_entry));
+				//int last_block_index = (dir[0].size - 1) / (sb->block_size / sizeof(dir_entry));
 				int last_entry_index = (dir[0].size - 1) % (sb->block_size / sizeof(dir_entry));
 
 				dir = (dir_entry*)BLOCK(current_dir);
@@ -622,8 +632,26 @@ void vfs_rmdir(char *dir_name)
 
 
 // get fich1 fich2 - copia um ficheiro normal UNIX fich1 para um ficheiro no nosso sistema fich2
-void vfs_get(char *nome_orig, char *nome_dest)
+void vfs_get(char* orig_name, char* dest_name)
 {
+	dir_entry* dir = (dir_entry*)BLOCK(current_dir);
+
+	int block_index = dir->size / (sb->block_size / sizeof(dir_entry));
+	int entry_index = dir->size % (sb->block_size / sizeof(dir_entry));
+
+	while(block_index > 0)
+	{
+		if(fat[current_dir] == -1)
+		{
+			fat[current_dir] = allocateBlock();
+		}
+
+		current_dir = fat[current_dir];
+		block_index--;
+	}
+
+	// ...
+
 	return;
 }
 
@@ -636,8 +664,33 @@ void vfs_put(char *nome_orig, char *nome_dest)
 
 
 // cat fich - escreve para o ecrã o conteúdo do ficheiro fich
-void vfs_cat(char *nome_fich)
+void vfs_cat(char* file_name)
 {
+	dir_entry* dir = (dir_entry *) BLOCK(current_dir);
+    
+    int i = 0;
+    int j = 0;
+    
+    while(i < dir[0].size)
+    {
+		int block_index = i / (sb->block_size / sizeof(dir_entry));
+        int entry_index = i % (sb->block_size / sizeof(dir_entry));
+        
+        if(block_index > j)
+        {
+            current_dir = fat[current_dir];
+            dir = (dir_entry*)BLOCK(current_dir);
+            j++;
+        }
+        
+        if(strcmp(dir[entry_index].name, file_name) == 0)
+        {
+            printf("%s", (char*) BLOCK(dir[entry_index].first_block));
+        }
+        
+        i++;
+    }
+
 	return;
 }
 
