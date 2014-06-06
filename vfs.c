@@ -777,8 +777,30 @@ void vfs_get(char* orig_name, char* dest_name)
 
 
 // put fich1 fich2 - copia um ficheiro do nosso sistema fich1 para um ficheiro normal UNIX fich2
-void vfs_put(char *nome_orig, char *nome_dest)
+void vfs_put(char* orig_name, char* dest_name)
 {
+	int fd;
+
+	if((fd = open(orig_name, O_CREAT | O_TRUNC | O_WRONLY, 0666)) == -1)
+	{
+		printf("Couldn't create file\n");
+		return;
+	}
+
+	dir_entry* dir = (dir_entry*)BLOCK(current_dir);
+
+	int num_of_blocks	= dir[0].size / sb->block_size;
+	int last_block		= dir[0].size % sb->block_size;
+	int	i;
+
+	for(i = 0; i < num_of_blocks; i++)
+	{
+		write(fd, BLOCK(dir[0].first_block), sb->block_size);
+		dir[0].first_block = fat[dir[0].first_block];
+	}
+
+	write(fd, BLOCK(dir[0].first_block), last_block);
+
 	return;
 }
 
@@ -786,30 +808,19 @@ void vfs_put(char *nome_orig, char *nome_dest)
 // cat fich - escreve para o ecrã o conteúdo do ficheiro fich
 void vfs_cat(char* file_name)
 {
-	dir_entry* dir = (dir_entry *) BLOCK(current_dir);
-    
-    int i = 0;
-    int j = 0;
-    
-    while(i < dir[0].size)
-    {
-		int block_index = i / (sb->block_size / sizeof(dir_entry));
-        int entry_index = i % (sb->block_size / sizeof(dir_entry));
-        
-        if(block_index > j)
-        {
-            current_dir = fat[current_dir];
-            dir = (dir_entry*)BLOCK(current_dir);
-            j++;
-        }
-        
-        if(strcmp(dir[entry_index].name, file_name) == 0)
-        {
-            printf("%s", (char*) BLOCK(dir[entry_index].first_block));
-        }
-        
-        i++;
-    }
+	dir_entry* dir = (dir_entry*)BLOCK(current_dir);
+
+	int num_of_blocks = dir[0].size / sb->block_size;
+	int last_block = dir[0].size % sb->block_size;
+	int	i;
+
+	for(i = 0; i < num_of_blocks; i++)
+	{
+		write(1, BLOCK(dir[0].first_block), sb->block_size);
+		dir[0].first_block = fat[dir[0].first_block];
+	}
+
+	write(1, BLOCK(dir[0].first_block), last_block);
 
 	return;
 }
