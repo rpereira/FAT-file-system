@@ -332,6 +332,7 @@ void exec_com(COMMAND com)
 		else if(com.argc > 2)
 		{
 			printf("mkdir: too many operands\n");
+			return;
 		}
 
 		vfs_mkdir(com.argv[1]);
@@ -343,9 +344,11 @@ void exec_com(COMMAND com)
 			printf("cd: missing operand\n");
 			return;
 		}
+
 		else if(com.argc > 2)
 		{
-			printf("cd	QQQQQQQQQQ3: too many operands\n");
+			printf("cd: too many operands\n");
+			return;
 		}
 
 		vfs_cd(com.argv[1]);
@@ -370,6 +373,7 @@ void exec_com(COMMAND com)
 		else if(com.argc > 2)
 		{
 			printf("rmdir: too many operands\n");
+			return;
 		}
 
 		vfs_rmdir(com.argv[1]);
@@ -391,27 +395,82 @@ void exec_com(COMMAND com)
 	}
 	else if(!strcmp(com.cmd, "put"))
 	{
-		// falta tratamento de erros
+		if(com.argc < 3)
+		{
+			printf("put: missing operand\n");
+			return;
+		}
+
+		else if(com.argc > 3)
+		{
+			printf("put: too many operands\n");
+			return;
+		}
+
 		vfs_put(com.argv[1], com.argv[2]);
 	}
 	else if(!strcmp(com.cmd, "cat"))
 	{
-		// falta tratamento de erros
+		if(com.argc == 1)
+		{
+			printf("cat: missing operand\n");
+			return;
+		}
+
+		else if(com.argc > 3)
+		{
+			printf("cat: too many operands\n");
+			return;
+		}
+
 		vfs_cat(com.argv[1]);
 	}
 	else if(!strcmp(com.cmd, "cp"))
 	{
-		// falta tratamento de erros
+		if(com.argc < 3)
+		{
+			printf("cp: missing operand\n");
+			return;
+		}
+
+		else if(com.argc > 3)
+		{
+			printf("cp: too many operands\n");
+			return;
+		}
+
 		vfs_cp(com.argv[1], com.argv[2]);
 	}
 	else if(!strcmp(com.cmd, "mv"))
 	{
-		// falta tratamento de erros
+		if(com.argc < 3)
+		{
+			printf("mv: missing operand\n");
+			return;
+		}
+
+		else if(com.argc > 3)
+		{
+			printf("mv: too many operands\n");
+			return;
+		}
+
 		vfs_mv(com.argv[1], com.argv[2]);
 	}
 	else if(!strcmp(com.cmd, "rm"))
 	{
-		// falta tratamento de erros
+		if(com.argc == 1)
+		{
+			printf("rm: missing operand\n");
+			return;
+		}
+
+		else if(com.argc > 2)
+		{
+			printf("rm: too many operands\n");
+			return;
+		}
+
 		vfs_rm(com.argv[1]);
 	}
 	else
