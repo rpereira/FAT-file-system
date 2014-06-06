@@ -13,7 +13,7 @@
 #define CHECK_NUMBER 	9999
 #define TYPE_DIR 		'D'
 #define TYPE_FILE 		'F'
-#define MAX_NAME_LENGHT 20
+#define MAX_NAME_LENGHT	20
 
 #define FAT_ENTRIES(TYPE) (TYPE == 8 ? 256 : TYPE == 10 ? 1024 : 4096)
 #define FAT_SIZE(TYPE) (FAT_ENTRIES(TYPE) * sizeof(int))
@@ -319,31 +319,73 @@ void exec_com(COMMAND com)
 			printf("ls command doesn't support arguments\n");
 			return;
 		}
+
 		vfs_ls();
 	}
 	else if(!strcmp(com.cmd, "mkdir"))
 	{
-		// falta tratamento de erros
+		if(com.argc == 1)
+		{
+			printf("mkdir: missing operand\n");
+			return;
+		}
+		else if(com.argc > 2)
+		{
+			printf("mkdir: too many operands\n");
+		}
+
 		vfs_mkdir(com.argv[1]);
 	}
 	else if(!strcmp(com.cmd, "cd"))
 	{
-		// falta tratamento de erros
+		if(com.argc == 1)
+		{
+			printf("cd: missing operand\n");
+			return;
+		}
+		else if(com.argc > 2)
+		{
+			printf("cd	QQQQQQQQQQ3: too many operands\n");
+		}
+
 		vfs_cd(com.argv[1]);
 	}
 	else if(!strcmp(com.cmd, "pwd"))
 	{
-		// falta tratamento de erros
+		if(com.argc > 1)
+		{
+			printf("pwd command doesn't support arguments\n");
+			return;
+		}
+
 		vfs_pwd();
 	}
 	else if(!strcmp(com.cmd, "rmdir"))
 	{
-		// falta tratamento de erros
+		if(com.argc == 1)
+		{
+			printf("rmdir: missing operand\n");
+			return;
+		}
+		else if(com.argc > 2)
+		{
+			printf("rmdir: too many operands\n");
+		}
+
 		vfs_rmdir(com.argv[1]);
 	}
 	else if(!strcmp(com.cmd, "get"))
 	{
-		// falta tratamento de erros
+		if(com.argc == 1)
+		{
+			printf("get: missing operand\n");
+			return;
+		}
+		else if(com.argc > 2)
+		{
+			printf("get: too many operands\n");
+		}
+
 		vfs_get(com.argv[1], com.argv[2]);
 	}
 	else if(!strcmp(com.cmd, "put"))
@@ -474,18 +516,18 @@ void vfs_mkdir(char* dir_name)
 		return;
 	}
 
-	dir_entry* dir = (dir_entry*)BLOCK(current_dir);
-
-	int i 				= 0;
-	int	size 			= dir[0].size;
-	int new_block;
-	int	already_exists 	= 0;
-
 	if(allocateBlock() == -1)
 	{
 		printf("mkdir: disk is full\n");
 		return;
 	}
+
+	dir_entry* dir = (dir_entry*)BLOCK(current_dir);
+
+	int i = 0;
+	int	size = dir[0].size;
+	int new_block;
+	int	already_exists = 0;
 
 	// check if dir name already exists
 	for(i = 0; i < size; i++)
@@ -550,16 +592,24 @@ void vfs_cd(char* dir_name)
 */
 void vfs_pwd(void)
 {
-	dir_entry* dir = (dir_entry*)BLOCK(current_dir);
+	char*	path[100];
+	int		current		  = 0;
+	int		dir_block_num = current_dir;
 
-	printf("/");
+	dir_entry* dir = (dir_entry*)BLOCK(dir_block_num);
 
-	while(current_dir != 0)
+	while(dir_block_num != 0)
 	{
-		printf("%s/", getDirName(current_dir, dir[1].first_block));
+		path[current] = getDirName(dir_block_num, dir[1].first_block);
 
-		current_dir = dir[1].first_block;
-		dir = (dir_entry*)BLOCK(current_dir);
+		dir_block_num = dir[1].first_block;
+		dir = (dir_entry*)BLOCK(dir_block_num);
+		current++;
+	}
+
+	for(dir_block_num = current - 1; dir_block_num >= 0; dir_block_num--)
+	{
+		printf("/%s", path[dir_block_num]);
 	}
 
 	printf("\n");
@@ -569,62 +619,94 @@ void vfs_pwd(void)
 
 
 // rmdir dir - remove o subdirectório dir (se vazio) do directório actual
-void vfs_rmdir(char *dir_name)
+void vfs_rmdir(char* dir_name)
 {
-	dir_entry* dir = (dir_entry*)BLOCK(current_dir);
-
-	int i = 0;
-	int j = 0;
-
-	while(i < dir[0].size)
+	if((strcmp(dir_name, ".") == 0) || (strcmp(dir_name, "..") == 0))
 	{
-		int block_index = i / (sb->block_size / sizeof(dir_entry));
-		int entry_index = i % (sb->block_size / sizeof(dir_entry));
+		printf("rmdir: '%s': Invalid argument.\n", dir_name);
+		return;
+	}
 
-		if(block_index > j)
+	dir_entry* dir		 = (dir_entry*)BLOCK(current_dir);
+	dir_entry* dir_block = dir;
+
+	int dir_block_num = current_dir;
+	int i			  = 2;			// dir entry index
+	int entry_index   = i;
+
+	while(i < dir[0].size)			// while there are entries to process
+	{
+		if(strcmp(dir_name, dir_block[entry_index].name) == 0)		// found entry
 		{
-			current_dir = fat[current_dir];
-			dir = (dir_entry*)BLOCK(current_dir);
-			j++;
-		}
+			// Encontrou entrada
+			// TODO: Verificar se é DIR (se não for, chamar continue)
 
-		if(strcmp(dir_name, dir[entry_index].name) == 0)
-		{
-			dir_entry* rem_dir = (dir_entry*)BLOCK(dir[entry_index].first_block);
+			// É DIR => TODO: Verificar se está vazio (se não estiver, dá erro e retorna)
+			// Está vazio => TODO: Libertar bloco (necessariamente único) do dir a remover (i.e., colocá-lo na free_list)
+			// Remover a entrada no dir corrente; casos possíveis:
+			//   * Entrada é a última e única do último bloco
+			//   * Entrada é a última mas há mais no último bloco
+			//   * Entrada não é a última e há mais de uma no último bloco
+			//   * Entrada não é a última e há apenas uma entrada no último bloco 
 
-			if(rem_dir[0].size == 2)
+			if(dir[i].type == TYPE_DIR)
 			{
-				// free block used by dir
-				fat[rem_dir->first_block] = sb->free_block;
-				sb->free_block = rem_dir->first_block;
+				dir_entry* rem_dir = (dir_entry*)BLOCK(dir[entry_index].first_block);
 
-				// find last dir entry
-				//int last_block_index = (dir[0].size - 1) / (sb->block_size / sizeof(dir_entry));
-				int last_entry_index = (dir[0].size - 1) % (sb->block_size / sizeof(dir_entry));
-
-				dir = (dir_entry*)BLOCK(current_dir);
-				dir[0].size--;
-
-				// not the last entry
-				if(i != dir[0].size - 1)
+				if(rem_dir[0].size > 2)		// not empty
 				{
-
+					printf("rmdir: '%s': Directory not empty.\n", dir_name);
+					return;
 				}
-
-				if(last_entry_index == 0)
+				else	// empty
 				{
-
+					dir[0].first_block  = sb->free_block;
+					fat[sb->free_block] = fat[dir[0].first_block];
+					dir = (dir_entry*)BLOCK(dir[0].first_block);
 				}
 			}
-			else
+			else	// not type DIR
 			{
-				printf("Dir %s is not empty!\n", dir_name);
+				continue;
+			}
+			
+
+			if(i < dir[0].size - 1)
+			{
+				// Não é a última entrada no directório
+				// Procurar a última entrada
+				int dir_last_block_num;
+				int last_entry_index = (dir[0].size - 1) % DIR_ENTRIES_PER_BLOCK;
+
+				for(dir_last_block_num = dir_block_num; fat[dir_last_block_num] != -1; dir_last_block_num = fat[dir_last_block_num]);
+
+				dir_entry* dir_last_block = (dir_entry*)BLOCK(dir_last_block_num);
+
+				// Copia última entrada para cima da entrada a apagar;
+				dir_block[entry_index] = dir_last_block[last_entry_index];
 			}
 
-			return;
-		}
+			// Decrementa número de entradas
+			dir[0].size--;
 
-		i++;
+			// Verificar se o útimo bloco ficou vazio
+			if(dir[0].size % DIR_ENTRIES_PER_BLOCK == 0)
+			{
+				// Libertar último bloco
+			}
+		}
+		else
+		{
+			i++;		// next entry
+
+			if(++entry_index == DIR_ENTRIES_PER_BLOCK)
+			{
+				// next block
+				dir_block_num = fat[dir_block_num];
+				dir_block	  = (dir_entry*)BLOCK(dir_block_num);
+				entry_index   = 0;
+			}
+		}
 	}
 
 	return;
