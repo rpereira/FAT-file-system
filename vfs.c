@@ -466,23 +466,24 @@ char* getDirName(int block, int parent)
 }
 
 /**
- * List current dir content
+ * List current dir content.
  */
 void vfs_ls(void)
 {
 	int i = 0;
 	int j = 0;
+	int dir_block_num = current_dir;
 
-	dir_entry* dir = (dir_entry*)BLOCK(current_dir);
+	dir_entry* dir = (dir_entry*)BLOCK(dir_block_num);
 
 	while(i < dir[0].size)
 	{
-		int block_index = i / (sb->block_size / sizeof(dir_entry));
+		int block_index = i / DIR_ENTRIES_PER_BLOCK;   // (i - 1) ???
 
 		if(block_index > j)
 		{
-			current_dir = fat[current_dir];
-			dir = (dir_entry*)BLOCK(current_dir);
+			dir_block_num = fat[dir_block_num];
+			dir = (dir_entry*)BLOCK(dir_block_num);
 			j++;
 		}
 
