@@ -376,14 +376,15 @@ void exec_com(COMMAND com)
 	}
 	else if(!strcmp(com.cmd, "get"))
 	{
-		if(com.argc == 1)
+		if(com.argc < 3)
 		{
 			printf("get: missing operand\n");
 			return;
 		}
-		else if(com.argc > 2)
+		else if(com.argc > 3)
 		{
 			printf("get: too many operands\n");
+			return;
 		}
 
 		vfs_get(com.argv[1], com.argv[2]);
@@ -431,8 +432,15 @@ int allocateBlock()
 	sb->free_block = fat[temp];
 
 	fat[temp] = -1;
+	sb->n_free_blocks--;
 
 	return temp;
+}
+
+void freeBlock(int block)
+{
+	fat[block] = sb->free_block;
+	sb->free_block = block;
 }
 
 char* getDirName(int block, int parent)
@@ -694,6 +702,7 @@ void vfs_rmdir(char* dir_name)
 			if(dir[0].size % DIR_ENTRIES_PER_BLOCK == 0)
 			{
 				// Libertar último bloco
+				freeBlock(DIR_ENTRIES_PER_BLOCK);
 			}
 		}
 		else
@@ -717,23 +726,51 @@ void vfs_rmdir(char* dir_name)
 // get fich1 fich2 - copia um ficheiro normal UNIX fich1 para um ficheiro no nosso sistema fich2
 void vfs_get(char* orig_name, char* dest_name)
 {
-	dir_entry* dir = (dir_entry*)BLOCK(current_dir);
-
-	int block_index = dir->size / (sb->block_size / sizeof(dir_entry));
-	int entry_index = dir->size % (sb->block_size / sizeof(dir_entry));
-
-	while(block_index > 0)
+	if(strlen(dest_name) >= MAX_NAME_LENGHT)
 	{
-		if(fat[current_dir] == -1)
-		{
-			fat[current_dir] = allocateBlock();
-		}
-
-		current_dir = fat[current_dir];
-		block_index--;
+		printf("get: cannot create file '%s': File name too long\n", dest_name);
+		return;
 	}
 
-	// ...
+	dir_entry* dir = (dir_entry*)BLOCK(current_dir);
+
+	int i;
+
+	for(i = 0; i < dir[0].size; i++)
+	{
+		if(strcmp(dest_name, dir[i].name) == 0)
+		{
+			printf("get: cannot create file '%s': File exists\n", dest_name);
+			return;
+		}
+	}
+
+	int fd;
+
+	if((fd = open(orig_name, O_RDONLY)) == -1)
+	{
+		printf("Couldn't open origin file\n");
+		return;
+	}
+
+	int first_free_block	= allocateBlock();
+	int bytes_read			= 0;
+
+	struct stat file_status;
+	stat(orig_name, &file_status);
+
+	bytes_read += read(fd, BLOCK(first_free_block), sb->block_size);
+
+	while(bytes_read < file_status.st_size)
+	{
+		int tmp_free_block = allocateBlock();
+
+		bytes_read += read(fd, BLOCK(tmp_free_block), sb->block_size);
+	}
+
+	init_dir_entry(&dir[dir[0].size], TYPE_FILE, dest_name, bytes_read, first_free_block);
+
+	dir[0].size++;
 
 	return;
 }
