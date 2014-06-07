@@ -592,13 +592,12 @@ void vfs_mkdir(char* dir_name)
 
 	dir_entry* dir = (dir_entry*)BLOCK(current_dir);
 
-	int i = 0;
-	int	size = dir[0].size;
+	int i;
 	int new_block;
 	int	already_exists = 0;
 
 	// check if dir name already exists
-	for(i = 0; i < size; i++)
+	for(i = 0; i < dir[0].size; i++)
 	{
 		if(!strcmp(dir[i].name, dir_name))
 		{
@@ -612,7 +611,7 @@ void vfs_mkdir(char* dir_name)
 	{
 		new_block = allocateBlock();
 
-		init_dir_entry(&dir[size], TYPE_DIR, dir_name, 0, new_block);
+		init_dir_entry(&dir[dir[0].size], TYPE_DIR, dir_name, 0, new_block);
 		init_dir_block(new_block, dir[0].first_block);
 		dir[0].size++;
 	}
@@ -686,7 +685,10 @@ void vfs_pwd(void)
 }
 
 
-// rmdir dir - remove o subdirectório dir (se vazio) do directório actual
+/**
+* If empty, removes the given directory.
+* @param dir_name the name of the directory to remove
+*/
 void vfs_rmdir(char* dir_name)
 {
 	if((strcmp(dir_name, ".") == 0) || (strcmp(dir_name, "..") == 0))
@@ -704,64 +706,46 @@ void vfs_rmdir(char* dir_name)
 
 	while(i < dir[0].size)			// while there are entries to process
 	{
-		if(strcmp(dir_name, dir_block[entry_index].name) == 0)		// found entry
+		if(strcmp(dir_name, dir_block[entry_index].name) == 0)		// entry found
 		{
-			// Encontrou entrada
-			// TODO: Verificar se é DIR (se não for, chamar continue)
-
-			// É DIR => TODO: Verificar se está vazio (se não estiver, dá erro e retorna)
-			// Está vazio => TODO: Libertar bloco (necessariamente único) do dir a remover (i.e., colocá-lo na free_list)
-			// Remover a entrada no dir corrente; casos possíveis:
-			//   * Entrada é a última e única do último bloco
-			//   * Entrada é a última mas há mais no último bloco
-			//   * Entrada não é a última e há mais de uma no último bloco
-			//   * Entrada não é a última e há apenas uma entrada no último bloco 
-
 			if(dir[i].type == TYPE_DIR)
 			{
 				dir_entry* rem_dir = (dir_entry*)BLOCK(dir[entry_index].first_block);
 
-				if(rem_dir[0].size > 2)		// not empty
+				if(rem_dir[0].size > 2)			// not empty
 				{
 					printf("rmdir: '%s': Directory not empty.\n", dir_name);
 					return;
 				}
 				else	// empty
-				{
-					dir[0].first_block  = sb->free_block;
-					fat[sb->free_block] = fat[dir[0].first_block];
-					dir = (dir_entry*)BLOCK(dir[0].first_block);
+				{					
+					if(i < dir[0].size - 1)		// not the last entry
+					{
+						// find last entry
+						int dir_last_block_num;
+						int last_entry_index = (dir[0].size - 1) % DIR_ENTRIES_PER_BLOCK;
+
+						for(dir_last_block_num = dir_block_num; fat[dir_last_block_num] != -1; dir_last_block_num = fat[dir_last_block_num]);
+
+						dir_entry* dir_last_block = (dir_entry*)BLOCK(dir_last_block_num);
+
+						// overwrite the entry to remove with the last entry
+						dir_block[entry_index] = dir_last_block[last_entry_index];
+					}
+
+					dir[0].size--;
+
+					// checks if last block is empty
+					if(dir[0].size % DIR_ENTRIES_PER_BLOCK == 0)
+					{
+						// free last block
+						freeBlock(DIR_ENTRIES_PER_BLOCK);
+					}
 				}
 			}
-			else	// not type DIR
+			else	// not DIR
 			{
 				continue;
-			}
-			
-
-			if(i < dir[0].size - 1)
-			{
-				// Não é a última entrada no directório
-				// Procurar a última entrada
-				int dir_last_block_num;
-				int last_entry_index = (dir[0].size - 1) % DIR_ENTRIES_PER_BLOCK;
-
-				for(dir_last_block_num = dir_block_num; fat[dir_last_block_num] != -1; dir_last_block_num = fat[dir_last_block_num]);
-
-				dir_entry* dir_last_block = (dir_entry*)BLOCK(dir_last_block_num);
-
-				// Copia última entrada para cima da entrada a apagar;
-				dir_block[entry_index] = dir_last_block[last_entry_index];
-			}
-
-			// Decrementa número de entradas
-			dir[0].size--;
-
-			// Verificar se o útimo bloco ficou vazio
-			if(dir[0].size % DIR_ENTRIES_PER_BLOCK == 0)
-			{
-				// Libertar último bloco
-				freeBlock(DIR_ENTRIES_PER_BLOCK);
 			}
 		}
 		else
