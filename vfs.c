@@ -625,29 +625,23 @@ void vfs_mkdir(char* dir_name)
 */
 void vfs_cd(char* dir_name)
 {
-	int i = 0;
-	int j = 0;
-
 	dir_entry* dir = (dir_entry*)BLOCK(current_dir);
+	
+	int	i;
+	int dir_found	= 0;
 
-	while(i < dir[0].size)
+	for(i = 2; i < dir[0].size; i++)
 	{
-		int block_index = i / DIR_ENTRIES_PER_BLOCK;
-		int entry_index = i % DIR_ENTRIES_PER_BLOCK;
-
-		if(block_index > j)
+		if(!strcmp(dir[i].name, dir_name))
 		{
-			current_dir = fat[current_dir];
-			dir = (dir_entry*)BLOCK(current_dir);
-			j++;
+			dir_found	= 1;
+			current_dir	= dir[i].first_block;
 		}
-
-		if(strcmp(dir[entry_index].name, dir_name) == 0)
-		{
-			current_dir = dir[entry_index].first_block;
-		}
-
-		i++;
+	}
+	
+	if(!dir_found)
+	{
+		printf("cd: %s: No such file or directory\n", dir_name);
 	}
 
 	return;
@@ -779,7 +773,7 @@ void vfs_get(char* orig_name, char* dest_name)
 
 	int i;
 
-	for(i = 0; i < dir[0].size; i++)
+	for(i = 2; i < dir[0].size; i++)
 	{
 		if(strcmp(dest_name, dir[i].name) == 0)
 		{
