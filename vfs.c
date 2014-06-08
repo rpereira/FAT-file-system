@@ -537,7 +537,6 @@ int _dircmp(dir_entry* dir1, dir_entry* dir2)
 	return strcmp(dir1 ->name, dir2->name);
 }
 
-
 static int dirscmp(const void* p1, const void* p2)
 {
 	return _dircmp((dir_entry*)p1, (dir_entry*)p2);
@@ -619,7 +618,7 @@ void vfs_mkdir(char* dir_name)
 	int	already_exists = 0;
 
 	// check if dir name already exists
-	for(i = 0; i < dir[0].size; i++)
+	for(i = 2; i < dir[0].size; i++)
 	{
 		if(!strcmp(dir[i].name, dir_name))
 		{
@@ -652,7 +651,7 @@ void vfs_cd(char* dir_name)
 	int	i;
 	int dir_found	= 0;
 
-	for(i = 2; i < dir[0].size; i++)
+	for(i = 0; i < dir[0].size; i++)
 	{
 		if(!strcmp(dir[i].name, dir_name))
 		{
@@ -906,8 +905,37 @@ void vfs_mv(char *nome_orig, char *nome_dest)
 }
 
 
-// rm fich - remove o ficheiro fich
-void vfs_rm(char *nome_fich)
+/**
+* Removes the given file.
+* @param file_name the name of the file to remove
+*/
+void vfs_rm(char* file_name)
 {
+	dir_entry* dir = (dir_entry*)BLOCK(current_dir);
+	
+	int file_found = 0;
+	int i;
+
+	for(i = 2; i < dir[0].size; i++)
+	{
+		if (dir[i].type == TYPE_FILE && !strcmp(dir[i].name, file_name))
+		{
+			file_found = 1;
+			
+			dir[i].first_block = sb->free_block;
+			fat[sb -> free_block] = fat[dir[i].first_block];
+		}
+
+		if(file_found && i < dir[0].size - 1)
+		{		
+			dir[i] = dir[i + 1];
+		}
+	}    
+
+	if(file_found)
+	{
+		dir[0].size--;
+	}
+	
 	return;
 }
