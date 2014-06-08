@@ -511,8 +511,8 @@ char* getDirName(int block, int parent)
 
 	while(i < dir[0].size)
 	{
-		int block_index = i / (sb->block_size / sizeof(dir_entry));
-		int entry_index = i % (sb->block_size / sizeof(dir_entry));
+		int block_index = i / DIR_ENTRIES_PER_BLOCK;
+		int entry_index = i % DIR_ENTRIES_PER_BLOCK;
 
 		if(block_index > j)
 		{
@@ -632,8 +632,8 @@ void vfs_cd(char* dir_name)
 
 	while(i < dir[0].size)
 	{
-		int block_index = i / (sb->block_size / sizeof(dir_entry));
-		int entry_index = i % (sb->block_size / sizeof(dir_entry));
+		int block_index = i / DIR_ENTRIES_PER_BLOCK;
+		int entry_index = i % DIR_ENTRIES_PER_BLOCK;
 
 		if(block_index > j)
 		{
@@ -697,12 +697,12 @@ void vfs_rmdir(char* dir_name)
 		return;
 	}
 
-	dir_entry* dir		 = (dir_entry*)BLOCK(current_dir);
-	dir_entry* dir_block = dir;
+	dir_entry* dir			= (dir_entry*)BLOCK(current_dir);
+	dir_entry* dir_block	= dir;
 
-	int dir_block_num = current_dir;
-	int i			  = 2;			// dir entry index
-	int entry_index   = i;
+	int dir_block_num	= current_dir;
+	int i				= 2;			// dir entry index
+	int entry_index		= i;
 
 	while(i < dir[0].size)			// while there are entries to process
 	{
@@ -755,9 +755,9 @@ void vfs_rmdir(char* dir_name)
 			if(++entry_index == DIR_ENTRIES_PER_BLOCK)
 			{
 				// next block
-				dir_block_num = fat[dir_block_num];
-				dir_block	  = (dir_entry*)BLOCK(dir_block_num);
-				entry_index   = 0;
+				dir_block_num	= fat[dir_block_num];
+				dir_block		= (dir_entry*)BLOCK(dir_block_num);
+				entry_index		= 0;
 			}
 		}
 	}
@@ -847,23 +847,23 @@ void vfs_put(char* orig_name, char* dest_name)
 	return;
 }
 
-
-// cat fich - escreve para o ecrã o conteúdo do ficheiro fich
+/**
+* Outputs file content to the standart output.
+* @param file_name the name of the file to output
+*/
 void vfs_cat(char* file_name)
 {
 	dir_entry* dir = (dir_entry*)BLOCK(current_dir);
-
-	int num_of_blocks = dir[0].size / sb->block_size;
-	int last_block = dir[0].size % sb->block_size;
+	
 	int	i;
 
-	for(i = 0; i < num_of_blocks; i++)
+	for(i = 2; i < dir[0].size; i++)
 	{
-		write(1, BLOCK(dir[0].first_block), sb->block_size);
-		dir[0].first_block = fat[dir[0].first_block];
+		if(!strcmp(dir[i].name, file_name))
+		{
+			write(1, BLOCK(dir[i].first_block), dir[i].size);
+		}
 	}
-
-	write(1, BLOCK(dir[0].first_block), last_block);
 
 	return;
 }
