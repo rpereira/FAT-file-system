@@ -9,10 +9,10 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
-#define MAXARGS 		100
-#define CHECK_NUMBER 	9999
-#define TYPE_DIR 		'D'
-#define TYPE_FILE 		'F'
+#define MAXARGS			100
+#define CHECK_NUMBER	9999
+#define TYPE_DIR		'D'
+#define TYPE_FILE		'F'
 #define MAX_NAME_LENGHT	20
 
 #define FAT_ENTRIES(TYPE) (TYPE == 8 ? 256 : TYPE == 10 ? 1024 : 4096)
