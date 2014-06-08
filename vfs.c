@@ -532,40 +532,62 @@ char* getDirName(int block, int parent)
 	return NULL;
 }
 
+int _dircmp(dir_entry* dir1, dir_entry* dir2)
+{
+	return strcmp(dir1 ->name, dir2->name);
+}
+
+
+static int dirscmp(const void* p1, const void* p2)
+{
+	return _dircmp((dir_entry*)p1, (dir_entry*)p2);
+}
+
 /**
  * List current dir content.
  */
 void vfs_ls(void)
 {
-	int i = 0;
-	int j = 0;
-	int dir_block_num = current_dir;
-
-	dir_entry* dir = (dir_entry*)BLOCK(dir_block_num);
-
-	while(i < dir[0].size)
+	dir_entry* dir	= (dir_entry*)BLOCK(current_dir);
+	dir_entry* dirs	= (dir_entry*)malloc(sizeof(dir_entry) * dir[0].size);
+	
+	int num_blocks	= dir[0].size / DIR_ENTRIES_PER_BLOCK;
+	int last_blocks	= dir[0].size % DIR_ENTRIES_PER_BLOCK;
+	int i;
+	int j;
+	int k;
+	
+	for(j = 0; j < num_blocks; j++)
 	{
-		int block_index = i / DIR_ENTRIES_PER_BLOCK;   // (i - 1) ???
-
-		if(block_index > j)
+		for(i = 0; i < DIR_ENTRIES_PER_BLOCK; i++)
 		{
-			dir_block_num = fat[dir_block_num];
-			dir = (dir_entry*)BLOCK(dir_block_num);
-			j++;
+			dirs[j * DIR_ENTRIES_PER_BLOCK + i] = dir[i];
 		}
+			
+		// update current block
+		dir[0].first_block = fat[dir[0].first_block];
+		dir = (dir_entry *)BLOCK(dir[0].first_block);
+	}
+	
+	for(k = 0; k < last_blocks; k++)
+	{
+		dirs[j * i + k] = dir[k];
+	}
 
-		printf("%s\t %d-%s-%d\t", dir[i].name, dir[i].day, months[dir[i].month - 1], 1900 + dir[i].year);
-
-		if(dir[i].type == TYPE_DIR)
+	qsort(dirs, dir[0].size, sizeof(dir_entry), dirscmp);
+	
+	for(i = 0; i < dir[0].size; i++)
+	{
+		printf("%-20s\t%2d-%s-%d\t", dirs[i].name, dirs[i].day, months[dirs[i].month - 1], 1900 + dirs[i].year);
+		
+		if(dirs[i].type == TYPE_DIR)
 		{
 			printf("DIR\n");
 		}
 		else
 		{
-			printf("%d\n", dir[i].size);
+			printf("%d\n", dirs[i].size);
 		}
-
-		i++;
 	}
 
 	return;
