@@ -506,29 +506,16 @@ char* getDirName(int block, int parent)
 {
 	dir_entry* dir = (dir_entry*)BLOCK(parent);
 
-	int i = 0;
-	int j = 0;
-
-	while(i < dir[0].size)
+	int i;
+	
+	for(i = 2; i < dir[0].size; i++)
 	{
-		int block_index = i / DIR_ENTRIES_PER_BLOCK;
-		int entry_index = i % DIR_ENTRIES_PER_BLOCK;
-
-		if(block_index > j)
+		if(dir[i].first_block == block)
 		{
-			parent = fat[parent];
-			dir    = (dir_entry*)BLOCK(parent);
-			j++;
+			return dir[i].name;
 		}
-
-		if(dir[entry_index].first_block == block)
-		{
-			return dir[entry_index].name;
-		}
-
-		i++;
 	}
-
+	
 	return NULL;
 }
 
@@ -670,31 +657,41 @@ void vfs_cd(char* dir_name)
 
 /**
 * Prints the path of the current working directory.
-* @param dir_name the name of the new directory
 */
 void vfs_pwd(void)
 {
+	dir_entry* dir = (dir_entry*)BLOCK(current_dir);
+	
 	char*	path[100];
-	int		current		  = 0;
-	int		dir_block_num = current_dir;
+	int		_current_dir	= current_dir;
+	int		iterator		= 0;
+	
+	path[0] = "";
 
-	dir_entry* dir = (dir_entry*)BLOCK(dir_block_num);
-
-	while(dir_block_num != 0)
+	while(dir[0].first_block != 0)
 	{
-		path[current] = getDirName(dir_block_num, dir[1].first_block);
+		path[iterator] = getDirName(_current_dir, dir[1].first_block);
 
-		dir_block_num = dir[1].first_block;
-		dir = (dir_entry*)BLOCK(dir_block_num);
-		current++;
+		_current_dir = dir[1].first_block;
+		dir = (dir_entry*)BLOCK(_current_dir);
+		iterator++;
 	}
 
-	for(dir_block_num = current - 1; dir_block_num >= 0; dir_block_num--)
+	if(strcmp(path[0], "") == 0)
 	{
-		printf("/%s", path[dir_block_num]);
+		printf("/\n");
 	}
-
-	printf("\n");
+	else
+	{
+		int i;
+		
+		for(i = iterator - 1; i >= 0; i--)
+		{
+			printf("/%s", path[i]);
+		}
+		
+		printf("\n");
+	}
 
 	return;
 }
