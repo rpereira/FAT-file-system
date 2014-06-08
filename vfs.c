@@ -19,7 +19,6 @@
 #define FAT_SIZE(TYPE) (FAT_ENTRIES(TYPE) * sizeof(int))
 #define BLOCK(N) (blocks + N * sb->block_size)
 #define DIR_ENTRIES_PER_BLOCK (sb->block_size / sizeof(dir_entry))
-#define MAX_ENTRIES (sb->block_size / sizeof(dir_entry))
 
 typedef struct command
 {
