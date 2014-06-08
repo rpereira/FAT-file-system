@@ -24,18 +24,18 @@
 typedef struct command
 {
 	char*	cmd;                // string apenas com o comando
-	int		argc;               // número de argumentos
+	int		argc;               // nï¿½mero de argumentos
 	char*	argv[MAXARGS + 1];  // vector de argumentos do comando
 } COMMAND;
 
 typedef struct superblock_entry
 {
-	int check_number;   // número que permite identificar o sistema como válido
+	int check_number;   // nï¿½mero que permite identificar o sistema como vï¿½lido
 	int block_size;     // tamanho de um bloco {256, 512(default) ou 1024 bytes}
 	int fat_type;       // tipo de FAT {8, 10(default) ou 12}
-	int root_block;     // número do 1º bloco a que corresponde o directório raiz
-	int free_block;     // número do 1º bloco da lista de blocos não utilizados
-	int n_free_blocks;  // total de blocos não utilizados
+	int root_block;     // nï¿½mero do 1ï¿½ bloco a que corresponde o directï¿½rio raiz
+	int free_block;     // nï¿½mero do 1ï¿½ bloco da lista de blocos nï¿½o utilizados
+	int n_free_blocks;  // total de blocos nï¿½o utilizados
 } superblock;
 
 typedef struct directory_entry
@@ -52,8 +52,8 @@ typedef struct directory_entry
 // Global vars
 superblock*	sb;			  // superblock do sistema de ficheiros
 int*		fat;          // apontador para a FAT
-char*		blocks;       // apontador para a região dos dados
-int			current_dir;  // bloco do directório corrente
+char*		blocks;       // apontador para a regiï¿½o dos dados
+int			current_dir;  // bloco do directoio corrente
 
 // auxiliary functions
 COMMAND parse(char*);
@@ -121,8 +121,8 @@ void parse_argv(int argc, char *argv[])
 {
 	int i, block_size, fat_type;
 
-	block_size  = 512;		// valor por omissão
-	fat_type	= 10;		// valor por omissão
+	block_size  = 512;		// valor por omissï¿½o
+	fat_type	= 10;		// valor por omissï¿½o
 
 	if(argc < 2 || argc > 4)
 	{
@@ -182,7 +182,7 @@ void init_filesystem(int block_size, int fat_type, char* filesystem_name)
 
 	if((fsd = open(filesystem_name, O_RDWR)) == -1)
 	{
-		// o sistema de ficheiros não existe --> é necessário criá-lo e formatá-lo
+		// o sistema de ficheiros nï¿½o existe --> ï¿½ necessï¿½rio criï¿½-lo e formatï¿½-lo
 		if((fsd = open(filesystem_name, O_CREAT | O_TRUNC | O_RDWR, S_IRWXU)) == -1)
 		{
 			printf("vfs: cannot create filesystem (%s)\n", filesystem_name);
@@ -198,7 +198,7 @@ void init_filesystem(int block_size, int fat_type, char* filesystem_name)
 		lseek(fsd, filesystem_size - 1, SEEK_SET);
 		write(fsd, "", 1);
 
-		// faz o mapeamento do sistema de ficheiros e inicia as variáveis globais
+		// faz o mapeamento do sistema de ficheiros e inicia as variï¿½veis globais
 		if((sb = (superblock *)mmap(NULL, filesystem_size, PROT_READ | PROT_WRITE, MAP_SHARED, fsd, 0)) == MAP_FAILED)
 		{
 			printf("vfs: cannot map filesystem (mmap error)\n");
@@ -215,7 +215,7 @@ void init_filesystem(int block_size, int fat_type, char* filesystem_name)
 		// inicia a FAT
 		init_fat();
 
-		// inicia o bloco do directório raiz '/'
+		// inicia o bloco do directï¿½rio raiz '/'
 		init_dir_block(sb->root_block, sb->root_block);
 	}
 	else
@@ -225,7 +225,7 @@ void init_filesystem(int block_size, int fat_type, char* filesystem_name)
 		stat(filesystem_name, &buf);
 		filesystem_size = buf.st_size;
 
-		// faz o mapeamento do sistema de ficheiros e inicia as variáveis globais
+		// faz o mapeamento do sistema de ficheiros e inicia as variï¿½veis globais
 		if((sb = (superblock *)mmap(NULL, filesystem_size, PROT_READ | PROT_WRITE, MAP_SHARED, fsd, 0)) == MAP_FAILED)
 		{
 			printf("vfs: cannot map filesystem (mmap error)\n");
@@ -236,7 +236,7 @@ void init_filesystem(int block_size, int fat_type, char* filesystem_name)
 		fat = (int *)((unsigned long int) sb + sb->block_size);
 		blocks = (char *)((unsigned long int) fat + FAT_SIZE(sb->fat_type));
 
-		// testa se o sistema de ficheiros é válido 
+		// testa se o sistema de ficheiros ï¿½ vï¿½lido 
 		if(sb->check_number != CHECK_NUMBER || filesystem_size != sb->block_size + FAT_SIZE(sb->fat_type) + FAT_ENTRIES(sb->fat_type) * sb->block_size)
 		{
 			printf("vfs: invalid filesystem (%s)\n", filesystem_name);
@@ -249,7 +249,7 @@ void init_filesystem(int block_size, int fat_type, char* filesystem_name)
 
 	close(fsd);
 
-	// inicia o directório corrente
+	// inicia o directï¿½rio corrente
 	current_dir = sb->root_block;
 	return;
 }
@@ -282,7 +282,7 @@ void init_fat(void)
 void init_dir_block(int block, int parent_block)
 {
 	dir_entry *dir = (dir_entry *)BLOCK(block);
-	// o número de entradas no directório (inicialmente 2) fica guardado no campo size da entrada "."
+	// o nï¿½mero de entradas no directï¿½rio (inicialmente 2) fica guardado no campo size da entrada "."
 	init_dir_entry(&dir[0], TYPE_DIR, ".", 2, block);
 	init_dir_entry(&dir[1], TYPE_DIR, "..", 0, parent_block);
 	return;
@@ -306,7 +306,7 @@ void init_dir_entry(dir_entry *dir, char type, char *name, int size, int first_b
 
 void exec_com(COMMAND com)
 {
-	// para cada comando invocar a função que o implementa
+	// para cada comando invocar a funï¿½ï¿½o que o implementa
 	if(!strcmp(com.cmd, "exit"))
 	{
 		exit(0);
@@ -887,7 +887,7 @@ void vfs_cat(char* file_name)
 
 
 // cp fich1 fich2 - copia o ficheiro fich1 para fich2
-// cp fich dir - copia o ficheiro fich para o subdirectório dir
+// cp fich dir - copia o ficheiro fich para o subdirectï¿½rio dir
 void vfs_cp(char *orig_name, char *dest_name)
 {
 	return;
@@ -895,7 +895,7 @@ void vfs_cp(char *orig_name, char *dest_name)
 
 
 // mv fich1 fich2 - move o ficheiro fich1 para fich2
-// mv fich dir - move o ficheiro fich para o subdirectório dir
+// mv fich dir - move o ficheiro fich para o subdirectï¿½rio dir
 void vfs_mv(char* orig_name, char* dest_name)
 {
 	dir_entry* dir = (dir_entry*)BLOCK(current_dir);
