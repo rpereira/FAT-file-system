@@ -839,22 +839,14 @@ void vfs_put(char* orig_name, char* dest_name)
 	{
 		if(!strcmp(dir[i].name, orig_name))
 		{
-			write(fd, BLOCK(dir[i].first_block), dir[i].size);
-<<<<<<< HEAD
-<<<<<<< HEAD
 			file_found = 1;
+			write(fd, BLOCK(dir[i].first_block), dir[i].size);			
 		}
 	}
 	
 	if(!file_found)
 	{
 		printf("Couldn't find the specified file.\n");
-=======
-		}
->>>>>>> 4f8afcc215ea7da6ef0ea167f7cc81c7d25b3940
-=======
-		}
->>>>>>> 4f8afcc215ea7da6ef0ea167f7cc81c7d25b3940
 	}
 
 	return;
