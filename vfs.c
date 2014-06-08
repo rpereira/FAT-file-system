@@ -891,7 +891,7 @@ void vfs_cat(char* file_name)
 
 // cp fich1 fich2 - copia o ficheiro fich1 para fich2
 // cp fich dir - copia o ficheiro fich para o subdirectório dir
-void vfs_cp(char *nome_orig, char *nome_dest)
+void vfs_cp(char *orig_name, char *dest_name)
 {
 	return;
 }
@@ -899,8 +899,28 @@ void vfs_cp(char *nome_orig, char *nome_dest)
 
 // mv fich1 fich2 - move o ficheiro fich1 para fich2
 // mv fich dir - move o ficheiro fich para o subdirectório dir
-void vfs_mv(char *nome_orig, char *nome_dest)
+void vfs_mv(char* orig_name, char* dest_name)
 {
+	dir_entry* dir = (dir_entry*)BLOCK(current_dir);
+	
+	int i;
+	int j;
+	
+	for(i = 2; i < dir[0].size; i++)
+	{
+		if(!strcmp(dir[i].name, orig_name))
+		{      
+			for(j = 2; j < dir[0].size; j++)
+			{
+				if(!strcmp(dir[j].name, dest_name))
+				{		  
+					vfs_cp(orig_name, dest_name);
+					vfs_rm(orig_name);
+				}
+			}
+		}
+	}
+	
 	return;
 }
 
