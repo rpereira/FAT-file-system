@@ -824,7 +824,7 @@ void vfs_put(char* orig_name, char* dest_name)
 {
 	int fd;
 
-	if((fd = open(orig_name, O_CREAT | O_TRUNC | O_WRONLY, 0666)) == -1)
+	if((fd = open(dest_name, O_CREAT | O_TRUNC | O_WRONLY, 0666)) == -1)
 	{
 		printf("Couldn't create file\n");
 		return;
@@ -832,17 +832,26 @@ void vfs_put(char* orig_name, char* dest_name)
 
 	dir_entry* dir = (dir_entry*)BLOCK(current_dir);
 
-	int num_of_blocks	= dir[0].size / sb->block_size;
-	int last_block		= dir[0].size % sb->block_size;
 	int	i;
+	int file_found = 0;
 
-	for(i = 0; i < num_of_blocks; i++)
+	for(i = 2; i < dir[0].size; i++)
 	{
-		write(fd, BLOCK(dir[0].first_block), sb->block_size);
-		dir[0].first_block = fat[dir[0].first_block];
+		if(!strcmp(dir[i].name, orig_name))
+		{
+			write(fd, BLOCK(dir[i].first_block), dir[i].size);
+<<<<<<< HEAD
+			file_found = 1;
+		}
 	}
-
-	write(fd, BLOCK(dir[0].first_block), last_block);
+	
+	if(!file_found)
+	{
+		printf("Couldn't find the specified file.\n");
+=======
+		}
+>>>>>>> 4f8afcc215ea7da6ef0ea167f7cc81c7d25b3940
+	}
 
 	return;
 }
