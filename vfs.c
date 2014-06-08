@@ -35,7 +35,7 @@ typedef struct superblock_entry
 	int fat_type;       // tipo de FAT {8, 10(default) ou 12}
 	int root_block;     // n�mero do 1� bloco a que corresponde o direct�rio raiz
 	int free_block;     // n�mero do 1� bloco da lista de blocos n�o utilizados
-	int n_free_blocks;  // total de blocos n�o utilizados
+	int n_free_blocks;  // total de blocos nao utilizados
 } superblock;
 
 typedef struct directory_entry
